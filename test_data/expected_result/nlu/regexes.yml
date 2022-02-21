@@ -1,0 +1,8 @@
+version: "2.0"
+nlu:
+- regex: card
+  examples: |
+    - \d{12}
+- regex: zipcode
+  examples: |
+    - \d{6}

@@ -1,0 +1,12 @@
+version: "2.0"
+nlu:
+- synonym: cup
+  examples: |
+    - glass
+    - mug
+    - teacup
+- synonym: motor vehicle
+  examples: |
+    - bus
+    - car
+    - truck

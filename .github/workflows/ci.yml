@@ -1,0 +1,27 @@
+on:
+  pull_request: {}
+
+jobs:
+  test_action:
+    runs-on: ubuntu-latest
+    name: Test action
+    steps:
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.8.0
+      with:
+        access_token: ${{ github.token }}
+
+    - name: Checkout pull request HEAD commit instead of merge commit
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+
+    - name: Enforce Target Files
+      uses: ./
+
+    - name: Check Enforcement Result
+      run: |
+        difference=$(diff -r test_data/data test_data/expected_result)
+        [ "$difference" = "" ]
+
+
