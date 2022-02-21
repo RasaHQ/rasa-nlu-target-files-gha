@@ -25,4 +25,4 @@ runs:
       shell: bash
       run: |
         export PYTHONPATH=$PYTHONPATH:${{ github.action_path }}
-        python -m nlu_target_files --nlu_target_files_config ${{ inputs.nlu_target_files_config }}
+        python -m nlu_target_files enforce --nlu_target_files_config ${{ inputs.nlu_target_files_config }}
