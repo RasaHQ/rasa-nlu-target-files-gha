@@ -4,14 +4,48 @@ This ensures that data of the same kind and class (e.g. instances of the same sy
 up in the same file, making reviewing NLU data changes easier.
 
 It can be used locally or as a Github Action.
-When used as a Github action, it will **enforce** NLU target files.
-**N.B.** For this action to be effective, you must **commit the resulting changes in an additional workflow step**!
+When used as a Github action, it will enforce an NLU target files config. i.e. it will redistribute your NLU
+data into the target files you specify.
 
-When used locally, it can either **infer** or **enforce** NLU target files.
+Locally it can also be used to bootstrap an NLU target file config by inferrring targets from your existing NLU data.
+
+## Target File Config
+To use this action, you will need a config file that specifies target file paths, by default called `nlu_target_files_config.yml`.
+**Use relative paths!** Absolute paths will not be applicable across different machines.
+You can bootstrap a config file by [inferring target files locally](#local-use).
+The resulting file will follow this format:
+```yaml
+nlu_data_path: <path to root directory of your NLU data>
+default_target_files:
+  intents: <some default path>
+  synonyms: <some default path>
+  regexes: <some default path>
+  lookups: <some default path>
+target_files:
+  intents:
+    intent1: <specific target file path>
+    intent2: <specific target file path>
+  synonyms:
+    synonym1: <specific target file path>
+    synonym2: <specific target file path>
+  regexes:
+    regex1: <specific target file path>
+    regex2: <specific target file path>
+  lookups:
+    lookup1: <specific target file path>
+    lookup2: <specific target file path>
+```
+
+You can update the config file manually to match the target files you want.
+You may specify keys (i.e. intents, synonyms, etc.) that do not exist yet.
+They will be ignored unless they appear in your data when you enforce the target file config.
+
 
 ## Use as a Github Action
 
-This Github action enforces an NLU target file config using the command `python -m nlu_target_files enforce` with the [input arguments](#input-arguments) provided to it.
+This Github action enforces an [NLU target file config](#target-file-config).
+It will redistribute the data according to the config file provided.
+If an input file has no target data associated with it, the file will be deleted.
 
 Basic usage:
 ```
@@ -23,11 +57,6 @@ Basic usage:
       nlu_target_file_config: ./nlu_target_file_config.yml
 ```
 
-### Action Output
-
-There are no output parameters returned by this Github Action. It only rewrites NLU data files according to the given config.
-Remember to **commit the resulting changes in an additional workflow step**!
-
 
 ### Input arguments
 
@@ -38,6 +67,12 @@ You can set the following options using [`with`](https://docs.github.com/en/acti
 |           Input            |                                                           Description                                                           |        Default         |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
 | `nlu_target_files_config`        | The YAML file specifying the target file config. This file can be bootstrapped by running `python -m nlu_target_files infer` locally. | nlu_target_files_config.yml |
+
+
+### Action Output
+
+There are no output parameters returned by this Github Action. It only rewrites NLU data files according to the given config.
+Remember to **commit the resulting changes in an additional workflow step**!
 
 
 
@@ -83,7 +118,7 @@ jobs:
 
 ## Local Use
 
-To infer NLU target files from your existing Rasa project and bootstrap the config file, run:
+To infer NLU target files from your existing Rasa project, run:
 
 ```bash
 python -m nlu_target_files infer --nlu_data_path <PATH_TO_YOUR_NLU_DATA_DIR>
