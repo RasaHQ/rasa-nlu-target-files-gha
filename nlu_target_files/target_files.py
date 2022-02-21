@@ -12,7 +12,7 @@ import rasa.shared.data
 from rasa.shared.utils.io import write_yaml, read_yaml_file
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
-from nlu_target_files.constants import DEFAULT_NLU_TARGET_FILE, NLU_DATA_PATH
+from nlu_target_files.constants import DEFAULT_NLU_TARGET_FILE, NLU_DATA_PATH, TARGET_FILES_CONFIG_FILE
 from nlu_target_files.training_data import load_sortable_nlu_data, get_training_data_for_keys
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,9 @@ class TargetFilesConfig:
         synonym_target_files: Optional[Dict[Text, Text]] = None,
         regex_target_files: Optional[Dict[Text, Text]] = None,
         lookup_target_files: Optional[Dict[Text, Text]] = None,
+        config_filepath: Optional[Text] = TARGET_FILES_CONFIG_FILE
     ):
+        self.config_filepath = config_filepath
         self.nlu_data_path = nlu_data_path
         self.default_intent_target_file = default_intent_target_file
         self.default_synonym_target_file = default_synonym_target_file
@@ -169,8 +171,8 @@ class TargetFilesConfig:
             for section, values in self.as_dict()["target_files"].items()
         }
 
-    def write_target_config_to_file(self, output_file):
-        write_yaml(self.as_dict(), output_file, True)
+    def write_target_config_to_file(self):
+        write_yaml(self.as_dict(), self.config_filepath, True)
 
     def enforce_on_files(self, update_config_file=False):
         nlu_data = load_sortable_nlu_data(self.nlu_data_path)
@@ -230,6 +232,7 @@ class TargetFilesConfig:
     def load_structure_from_file(cls, input_file):
         loaded_structure = read_yaml_file(input_file)
         target_files = cls.from_dict(loaded_structure)
+        target_files.config_filepath = input_file
         return target_files
 
     @classmethod
@@ -316,19 +319,20 @@ def infer_nlu_target_files(
     nlu_data_path, nlu_target_files_config, default_nlu_target_file
 ):
     log_inference_warning(nlu_data_path, nlu_target_files_config)
-    nlu_target_files = TargetFilesConfig.infer_structure_from_files(
+    target_files = TargetFilesConfig.infer_structure_from_files(
         nlu_data_path,
         default_nlu_target_file,
         default_nlu_target_file,
         default_nlu_target_file,
         default_nlu_target_file,
+        config_filepath=nlu_target_files_config
     )
-    nlu_target_files.write_target_config_to_file(nlu_target_files_config)
+    target_files.write_target_config_to_file()
 
 
-def enforce_nlu_target_files(nlu_target_files_config):
+def enforce_nlu_target_files(nlu_target_files_config, update_config_file):
     nlu_target_files = TargetFilesConfig.load_structure_from_file(
         nlu_target_files_config
     )
     log_enforcement_info(nlu_target_files_config, nlu_target_files.nlu_data_path)
-    nlu_target_files.enforce_on_files()
+    nlu_target_files.enforce_on_files(update_config_file)

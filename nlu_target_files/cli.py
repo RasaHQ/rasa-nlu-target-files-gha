@@ -11,38 +11,8 @@ from nlu_target_files.target_files import (
 logger = logging.getLogger(__file__)
 
 
-def log_inference_warning(
-    nlu_data_path,
-    nlu_target_files_config,
-):
-    logger.warning(
-        f"""
-        Bootstrapping NLU target files config based on files in {nlu_data_path}.
-
-        N.B. Manually review the the output in {nlu_target_files_config} before enforcing it!
-
-        If an intent/synonym/etc. is found in multiple files, the last file it appears in will be taken as the target file.
-        Because of how training data is loaded by Rasa, inference of target files can have unexpected results.
-        E.g. synonyms in both the short (inline) and long formats have equal status in loaded training data. 
-        This means a file can be found to contain a synonym even when it has no explicit "synonym:" section.
-        """
-    )
-
-
-def log_enforcement_info(nlu_target_files_config, nlu_data_path):
-    logger.warning(
-        "\n"
-        f"Redistributing data in directory {os.path.abspath(nlu_data_path)} into target files according to config in {os.path.abspath(nlu_target_files_config)}."
-    )
-
-    logger.warning(
-        "\n"
-        f"Note that synonyms, regexes & lookups will be sorted alphabetically."
-        "\nTherefore you may see a large diff the first time you run this command.\n"
-    )
-
 def enforce(args):
-    enforce_nlu_target_files(nlu_target_files_config=args.nlu_target_files_config)
+    enforce_nlu_target_files(nlu_target_files_config=args.nlu_target_files_config, update_config_file=args.update_config_file)
 
 
 def infer(args):
@@ -100,7 +70,17 @@ def add_enforce_subparser(subparsers: argparse._SubParsersAction):
         ),
         default=constants.TARGET_FILES_CONFIG_FILE,
     )
-
+    parser_enforce.add_argument(
+        "--update_config_file",
+        help=(
+            """
+            Update the config file with any new items (intents, regexes, etc.) found.
+            New items will be explicitly assigned the default target file for their data type.
+            """
+        ),
+        default=False,
+        action="store_true"
+    )
 
 def create_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
