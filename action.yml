@@ -1,10 +1,10 @@
 name: 'Rasa NLU Target Files'
 description: 'A GitHub action to put Rasa NLU data in prescribed target files'
 inputs:
-  nlu_target_files_config:
+  target_files_config:
     description: YAML file containing NLU target files config. 
     required: false
-    default: nlu_target_files_config.yml
+    default: target_files_config.yml
 
 branding:
   icon: 'message-square'  
@@ -25,4 +25,4 @@ runs:
       shell: bash
       run: |
         export PYTHONPATH=$PYTHONPATH:${{ github.action_path }}
-        python -m nlu_target_files enforce --nlu_target_files_config ${{ inputs.nlu_target_files_config }}
+        python -m nlu_target_files enforce --target_files_config ${{ inputs.target_files_config }}

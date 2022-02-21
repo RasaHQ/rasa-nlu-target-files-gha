@@ -12,7 +12,7 @@ logger = logging.getLogger(__file__)
 
 
 def enforce(args):
-    enforce_nlu_target_files(nlu_target_files_config=args.nlu_target_files_config, update_config_file=args.update_config_file)
+    enforce_nlu_target_files(target_files_config=args.target_files_config, update_config_file=args.update_config_file)
 
 
 def infer(args):
@@ -23,7 +23,7 @@ def infer(args):
         raise
     infer_nlu_target_files(
         nlu_data_path=args.nlu_data_path,
-        nlu_target_files_config=args.nlu_target_files_config,
+        target_files_config=args.target_files_config,
         default_nlu_target_file=args.default_nlu_target_file,
     )
 
@@ -40,7 +40,7 @@ def add_infer_subparser(subparsers: argparse._SubParsersAction):
     )
     subparser.set_defaults(func=infer)
     subparser.add_argument(
-        "--nlu_target_files_config",
+        "--target_files_config",
         help=("YAML file to which to write inferred target file config."),
         default=constants.TARGET_FILES_CONFIG_FILE,
     )
@@ -64,7 +64,7 @@ def add_enforce_subparser(subparsers: argparse._SubParsersAction):
     )
     parser_enforce.set_defaults(func=enforce)
     parser_enforce.add_argument(
-        "--nlu_target_files_config",
+        "--target_files_config",
         help=(
             "YAML file specifying NLU target files. Bootstrap this file with `infer` if you don't have one yet."
         ),

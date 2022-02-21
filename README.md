@@ -10,7 +10,7 @@ data into the target files you specify.
 Locally it can also be used to bootstrap an NLU target file config by inferrring targets from your existing NLU data.
 
 ## Target File Config
-To use this action, you will need a config file that specifies target file paths, by default called `nlu_target_files_config.yml`.
+To use this action, you will need a config file that specifies target file paths, by default called `target_files_config.yml`.
 **Use relative paths!** Absolute paths will not be applicable across different machines.
 You can bootstrap a config file by [inferring target files locally](#local-use).
 The resulting file will follow this format:
@@ -60,13 +60,13 @@ Basic usage:
 
 ### Input arguments
 
-You can set the following options using [`with`](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idstepswith) in the step running this action. The file specified by `nlu_target_files_config` must exist for the action to run successfully.
+You can set the following options using [`with`](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idstepswith) in the step running this action. The file specified by `target_files_config` must exist for the action to run successfully.
 
 
 
 |           Input            |                                                           Description                                                           |        Default         |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `nlu_target_files_config`        | The YAML file specifying the target file config. This file can be bootstrapped by running `python -m nlu_target_files infer` locally. | nlu_target_files_config.yml |
+| `target_files_config`        | The YAML file specifying the target file config. This file can be bootstrapped by running `python -m nlu_target_files infer` locally. | target_files_config.yml |
 
 
 ### Action Output
@@ -129,5 +129,5 @@ See `python -m nlu_target_files infer --help` for more options.
 To enforce your target file config, run:
 
 ```
-python -m nlu_target_files enforce --nlu_target_files_config <PATH_TO_YAML_FILE>
+python -m nlu_target_files enforce --target_files_config <PATH_TO_YAML_FILE>
 ```
