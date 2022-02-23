@@ -26,3 +26,6 @@ nlu:
     - Berlin
     - Cologne
     - Hamburg
+- synonym: new synonym
+  examples: |
+    - new

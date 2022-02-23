@@ -4,7 +4,7 @@ inputs:
   target_files_config:
     description: YAML file containing NLU target files config. 
     required: false
-    default: target_files_config.yml
+    default: target_files.yml
 
 branding:
   icon: 'message-square'  
@@ -21,8 +21,19 @@ runs:
       run: |
         pip install -r "${{ github.action_path }}"/requirements.txt
       shell: bash
+    - name: Set boolean options
+      id: bool_opts
+      run: |
+        case "$(tr "[:upper:]" "[:lower:]" <<< "${{ inputs.update_config_file }}")" in
+            "true") echo "::set-output name=update_config_file::--update_config_file" ;;
+            *) echo "::set-output name=update_config_file::";;
+        esac
+
+      shell: bash
     - name: Run Result Comparison
       shell: bash
       run: |
         export PYTHONPATH=$PYTHONPATH:${{ github.action_path }}
-        python -m nlu_target_files enforce --target_files_config ${{ inputs.target_files_config }}
+        python -m nlu_target_files enforce \
+          --target_files_config ${{ inputs.target_files_config }} \
+          {{ steps.bool_opts.outputs.update_config_file }}

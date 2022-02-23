@@ -1,9 +1,9 @@
-nlu_data_path: test_data/data
+nlu_data_path: test_data/data/nlu
 default_target_files:
-  intents: data/nlu.yml
-  synonyms: data/nlu.yml
-  regexes: data/nlu.yml
-  lookups: data/nlu.yml
+  intents: test_data/data/nlu/nlu.yml
+  synonyms: test_data/data/nlu/synonyms.yml
+  regexes: test_data/data/nlu/regexes.yml
+  lookups: test_data/data/nlu/lookups.yml
 target_files:
   intents:
     greet: test_data/data/nlu/general.yml
@@ -17,12 +17,10 @@ target_files:
   synonyms:
     cup: test_data/data/nlu/synonyms.yml
     motor vehicle: test_data/data/nlu/synonyms.yml
-    new: test_data/data/nlu/synonyms.yml
+    new synonym: test_data/data/nlu/nlu.yml
   regexes:
     card: test_data/data/nlu/regexes.yml
-    new: test_data/data/nlu/regexes.yml
     zipcode: test_data/data/nlu/regexes.yml
   lookups:
     city: test_data/data/nlu/lookups.yml
     fruit: test_data/data/nlu/lookups.yml
-    new: test_data/data/nlu/lookups.yml

@@ -18,6 +18,8 @@ jobs:
 
     - name: Enforce Target Files
       uses: ./
+      with:
+        update_config_file: true
 
     - name: Check Enforcement Result
       run: |

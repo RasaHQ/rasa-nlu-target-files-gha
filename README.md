@@ -10,10 +10,18 @@ data into the target files you specify.
 Locally it can also be used to bootstrap an NLU target file config by inferrring targets from your existing NLU data.
 
 ## Target File Config
-To use this action, you will need a config file that specifies target file paths, by default called `target_files_config.yml`.
+To use this action, you will need a config file that specifies target file paths, by default called `target_files.yml`.
+The path for `nlu_data_path` should be the root of the directory of all your NLU data. The directory can contain other data as well 
+e.g. rules or stories, and these will be ignored.
+
 **Use relative paths!** Absolute paths will not be applicable across different machines.
 You can bootstrap a config file by [inferring target files locally](#local-use).
-The resulting file will follow this format:
+You can then update the config file manually to match the target files you want.
+You may specify keys (i.e. intents, synonyms, etc.) that do not exist yet.
+They will be ignored unless they appear in your data when you enforce the target file config.
+
+The resulting file should follow this format:
+
 ```yaml
 nlu_data_path: <path to root directory of your NLU data>
 default_target_files:
@@ -35,10 +43,6 @@ target_files:
     lookup1: <specific target file path>
     lookup2: <specific target file path>
 ```
-
-You can update the config file manually to match the target files you want.
-You may specify keys (i.e. intents, synonyms, etc.) that do not exist yet.
-They will be ignored unless they appear in your data when you enforce the target file config.
 
 
 ## Use as a Github Action
@@ -66,12 +70,13 @@ You can set the following options using [`with`](https://docs.github.com/en/acti
 
 |           Input            |                                                           Description                                                           |        Default         |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `target_files_config`        | The YAML file specifying the target file config. This file can be bootstrapped by running `python -m nlu_target_files infer` locally. | target_files_config.yml |
-
+| `target_files_config`        | The YAML file specifying the target file config. This file can be bootstrapped by running `python -m nlu_target_files infer` locally. | target_files.yml |
+| `update_config_file`        | Also update (rewrite) the `target_files_config` file with any new items found. New items will explicitly be assigned to the default file for their section. Specify `true` to use. | false |
 
 ### Action Output
 
-There are no output parameters returned by this Github Action. It only rewrites NLU data files according to the given config.
+There are no output parameters returned by this Github Action. It only rewrites NLU data files according to the given config,
+and updates the config file if `update_config_file` is specified.
 Remember to **commit the resulting changes in an additional workflow step**!
 
 
@@ -86,6 +91,13 @@ For example:
 on:
   push: {}
 
+env:
+  COMMIT_USERNAME: 'Github Actions'
+  COMMIT_EMAIL: 'github.actions@users.noreply.github.com'
+  DATA_DIRECTORY: 'data'
+  TARGET_FILE_CONFIG: 'nlu_target_file_config.yml'
+  COMMIT_MESSAGE: 'Github action: enforced NLU target files'
+
 jobs:
   enforce_nlu_target_files:
     runs-on: ubuntu-latest
@@ -94,7 +106,8 @@ jobs:
     - name: Enforce NLU Target Files
       uses: RasaHQ/rasa-nlu-target-file-gha@1.0.0
       with:
-        nlu_target_file_config: ./nlu_target_file_config.yml
+        nlu_target_file_config: ${{ env.TARGET_FILE_CONFIG }}
+        update_config_file: true
     - name: Check if changes were made
       id: git_diff
       run: |
@@ -110,7 +123,7 @@ jobs:
       run: |
         git config --global user.name '${{ env.COMMIT_USERNAME }}'
         git config --global user.email '${{ env.COMMIT_EMAIL }}'
-        git add '${{ env.DATA_DIRECTORY }}'
+        git add '${{ env.DATA_DIRECTORY }}' '${{ env.TARGET_FILE_CONFIG }}'
         git commit -am '${{ env.COMMIT_MESSAGE }}'
         git push
 ```

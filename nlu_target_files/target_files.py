@@ -145,7 +145,7 @@ class TargetFilesConfig:
         return target_files
 
     @classmethod
-    def from_dict(cls, nlu_target_files_dict):
+    def from_dict(cls, nlu_target_files_dict, config_filepath):
         target_files = cls(
             nlu_target_files_dict.get("nlu_data_path"),
             nlu_target_files_dict.get("default_target_files",{}).get("intents"),
@@ -156,14 +156,18 @@ class TargetFilesConfig:
             nlu_target_files_dict.get("target_files",{}).get("synonyms",{}),
             nlu_target_files_dict.get("target_files",{}).get("regexes",{}),
             nlu_target_files_dict.get("target_files",{}).get("lookups",{}),
+            config_filepath
         )
         return target_files
 
     @classmethod
-    def load_structure_from_file(cls, input_file):
-        loaded_structure = read_yaml_file(input_file)
-        target_files = cls.from_dict(loaded_structure)
-        target_files.config_filepath = input_file
+    def read_config_file(cls, config_filepath):
+        return read_yaml_file(config_filepath)
+
+    @classmethod
+    def load_structure_from_file(cls, config_filepath):
+        loaded_structure = cls.read_config_file(config_filepath)
+        target_files = cls.from_dict(loaded_structure, config_filepath)
         return target_files
 
 
