@@ -36,4 +36,4 @@ runs:
         export PYTHONPATH=$PYTHONPATH:${{ github.action_path }}
         python -m nlu_target_files enforce \
           --target_files_config ${{ inputs.target_files_config }} \
-          {{ steps.bool_opts.outputs.update_config_file }}
+          ${{ steps.bool_opts.outputs.update_config_file }}
