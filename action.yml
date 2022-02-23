@@ -5,6 +5,9 @@ inputs:
     description: YAML file containing NLU target files config. 
     required: false
     default: target_files.yml
+  update_config_file:
+    description: Also update (rewrite) the `target_files_config` file with any new items found. New items will explicitly be assigned to the default file for their section. Specify `true` to use. 
+    required: false
 
 branding:
   icon: 'message-square'  
