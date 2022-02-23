@@ -1,9 +1,9 @@
 nlu_data_path: test_data/data
 default_target_files:
-  intents: test_data/data/nlu.yml
-  synonyms: test_data/data/nlu.yml
-  regexes: test_data/data/nlu.yml
-  lookups: test_data/data/nlu.yml
+  intents: test_data/data/nlu/nlu.yml
+  synonyms: test_data/data/nlu/synonyms.yml
+  regexes: test_data/data/nlu/regexes.yml
+  lookups: test_data/data/nlu/lookups.yml
 target_files:
   intents:
     greet: test_data/data/nlu/general.yml
@@ -13,9 +13,11 @@ target_files:
     mood_great: test_data/data/nlu/nlu.yml
     mood_unhappy: test_data/data/nlu/nlu.yml
     bot_challenge: test_data/data/nlu/nlu.yml
+    new: test_data/data/nlu/nlu.yml
   synonyms:
     cup: test_data/data/nlu/synonyms.yml
     motor vehicle: test_data/data/nlu/synonyms.yml
+    new synonym: test_data/data/nlu/synonyms.yml
   regexes:
     card: test_data/data/nlu/regexes.yml
     zipcode: test_data/data/nlu/regexes.yml

@@ -12,7 +12,7 @@ import rasa.shared.data
 from rasa.shared.utils.io import write_yaml, read_yaml_file
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
-from nlu_target_files.constants import DEFAULT_NLU_TARGET_FILE, NLU_DATA_PATH
+from nlu_target_files.constants import DEFAULT_NLU_TARGET_FILE, NLU_DATA_PATH, TARGET_FILES_CONFIG_FILE
 from nlu_target_files.training_data import load_sortable_nlu_data, get_training_data_for_keys
 
 logger = logging.getLogger(__name__)
@@ -73,8 +73,11 @@ class TargetFilesConfig:
         synonym_target_files: Optional[Dict[Text, Text]] = None,
         regex_target_files: Optional[Dict[Text, Text]] = None,
         lookup_target_files: Optional[Dict[Text, Text]] = None,
+        config_filepath: Optional[Text] = TARGET_FILES_CONFIG_FILE
     ):
+        self.config_filepath = config_filepath
         self.nlu_data_path = nlu_data_path
+        self.nlu_data = load_sortable_nlu_data(self.nlu_data_path)
         self.default_intent_target_file = default_intent_target_file
         self.default_synonym_target_file = default_synonym_target_file
         self.default_regex_target_file = default_regex_target_file
@@ -92,6 +95,81 @@ class TargetFilesConfig:
 
         self.ensure_relative_paths()
         self.sort()
+
+    @classmethod
+    def infer_structure_from_files(
+        cls,
+        nlu_data_path: Optional[Text],
+        default_intent_target_file: Optional[Text],
+        default_synonym_target_file: Optional[Text],
+        default_regex_target_file: Optional[Text],
+        default_lookup_target_file: Optional[Text],
+        config_filepath: Optional[Text]
+    ):
+        intent_target_files = OrderedDefaultDict(lambda: default_intent_target_file)
+        synonym_target_files = OrderedDefaultDict(lambda: default_synonym_target_file)
+        regex_target_files = OrderedDefaultDict(lambda: default_regex_target_file)
+        lookup_target_files = OrderedDefaultDict(lambda: default_lookup_target_file)
+
+        nlu_files = rasa.shared.data.get_data_files(
+            nlu_data_path, rasa.shared.data.is_nlu_file
+        )
+
+        for filepath in nlu_files:
+            nlu_data = load_sortable_nlu_data(filepath)
+            intent_target_files.set_value_for_keys(
+                nlu_data.sorted_intents, filepath
+            )
+            synonym_target_files.set_value_for_keys(
+                nlu_data.sorted_synonym_names, filepath
+            )
+            regex_target_files.set_value_for_keys(
+                nlu_data.sorted_regex_names, filepath
+            )
+            lookup_target_files.set_value_for_keys(
+                nlu_data.sorted_lookup_names, filepath
+            )
+        target_files = cls(
+            nlu_data_path,
+            default_intent_target_file,
+            default_synonym_target_file,
+            default_regex_target_file,
+            default_lookup_target_file,
+            intent_target_files,
+            synonym_target_files,
+            regex_target_files,
+            lookup_target_files,
+            config_filepath
+
+        )
+        return target_files
+
+    @classmethod
+    def from_dict(cls, nlu_target_files_dict, config_filepath):
+        target_files = cls(
+            nlu_target_files_dict.get("nlu_data_path"),
+            nlu_target_files_dict.get("default_target_files",{}).get("intents"),
+            nlu_target_files_dict.get("default_target_files",{}).get("synonyms"),
+            nlu_target_files_dict.get("default_target_files",{}).get("regexes"),
+            nlu_target_files_dict.get("default_target_files",{}).get("lookups"),
+            nlu_target_files_dict.get("target_files",{}).get("intents",{}),
+            nlu_target_files_dict.get("target_files",{}).get("synonyms",{}),
+            nlu_target_files_dict.get("target_files",{}).get("regexes",{}),
+            nlu_target_files_dict.get("target_files",{}).get("lookups",{}),
+            config_filepath
+        )
+        return target_files
+
+    @classmethod
+    def read_config_file(cls, config_filepath):
+        return read_yaml_file(config_filepath)
+
+    @classmethod
+    def load_structure_from_file(cls, config_filepath):
+        loaded_structure = cls.read_config_file(config_filepath)
+        target_files = cls.from_dict(loaded_structure, config_filepath)
+        return target_files
+
 
     def ensure_relative_paths(self):
         """Ensure all target paths are relative so that enforcement makes sense across machines.
@@ -169,32 +247,17 @@ class TargetFilesConfig:
             for section, values in self.as_dict()["target_files"].items()
         }
 
-    def write_target_config_to_file(self, output_file):
-        write_yaml(self.as_dict(), output_file, True)
-
     def enforce_on_files(self, update_config_file=False):
-        nlu_data = load_sortable_nlu_data(self.nlu_data_path)
-        all_keys_in_data = nlu_data.get_all_keys_present()
-        all_keys_in_nlu_target_files = self.get_handled_keys()
-        new_keys = {
-            key: set(all_keys_in_data[key]) - set(all_keys_in_nlu_target_files[key])
-            for key in all_keys_in_data.keys()
-        }
-
+        self.update_config_from_data()
         target_keys_per_file = self.as_inverted_dict()
-
-        for section, filename in self.as_dict()["default_target_files"].items():
-            target_keys_per_file[filename][section].extend(new_keys[section])
-
         existing_nlu_files = set(
             rasa.shared.data.get_data_files(
                 self.nlu_data_path, rasa.shared.data.is_nlu_file
             )
         )
         existing_and_new_nlu_files = existing_nlu_files.union(
-            set(target_keys_per_file.keys())
+            set(self.as_inverted_dict().keys())
         )
-
         writer = RasaYAMLWriter()
         for filename in existing_and_new_nlu_files:
             target_keys = target_keys_per_file.get(filename, [])
@@ -204,131 +267,82 @@ class TargetFilesConfig:
                 )
                 os.remove(filename)
                 continue
-            contents_per_file = get_training_data_for_keys(nlu_data, target_keys)
+            contents_per_file = get_training_data_for_keys(self.nlu_data, target_keys)
             logger.warning(f"Writing data to file {filename}")
             writer.dump(filename, contents_per_file)
         
         if update_config_file:
             self.write_target_config_to_file()
 
-    @classmethod
-    def from_dict(cls, nlu_target_files_dict):
-        target_files = cls(
-            nlu_target_files_dict.get("nlu_data_path"),
-            nlu_target_files_dict.get("default_target_files",{}).get("intents"),
-            nlu_target_files_dict.get("default_target_files",{}).get("synonyms"),
-            nlu_target_files_dict.get("default_target_files",{}).get("regexes"),
-            nlu_target_files_dict.get("default_target_files",{}).get("lookups"),
-            nlu_target_files_dict.get("target_files",{}).get("intents",{}),
-            nlu_target_files_dict.get("target_files",{}).get("synonyms",{}),
-            nlu_target_files_dict.get("target_files",{}).get("regexes",{}),
-            nlu_target_files_dict.get("target_files",{}).get("lookups",{}),
-        )
-        return target_files
+    def update_config_from_data(self):
+        all_keys_in_data = self.nlu_data.get_all_keys_present()
+        all_keys_in_nlu_target_files = self.get_handled_keys()
+        new_keys = {
+            key: set(all_keys_in_data[key]) - set(all_keys_in_nlu_target_files[key])
+            for key in all_keys_in_data.keys()
+        }
+        self.intent_target_files.set_value_for_keys(new_keys["intents"], self.default_intent_target_file)
+        self.synonym_target_files.set_value_for_keys(new_keys["synonyms"], self.default_synonym_target_file)
+        self.regex_target_files.set_value_for_keys(new_keys["regexes"], self.default_regex_target_file)
+        self.lookup_target_files.set_value_for_keys(new_keys["lookups"], self.default_lookup_target_file)
 
-    @classmethod
-    def load_structure_from_file(cls, input_file):
-        loaded_structure = read_yaml_file(input_file)
-        target_files = cls.from_dict(loaded_structure)
-        return target_files
+    def write_target_config_to_file(self):
+        write_yaml(self.as_dict(), self.config_filepath, True)
 
-    @classmethod
-    def infer_structure_from_files(
-        cls,
-        nlu_data_path: Text = NLU_DATA_PATH,
-        default_intent_target_file: Text = DEFAULT_NLU_TARGET_FILE,
-        default_synonym_target_file: Text = DEFAULT_NLU_TARGET_FILE,
-        default_regex_target_file: Text = DEFAULT_NLU_TARGET_FILE,
-        default_lookup_target_file: Text = DEFAULT_NLU_TARGET_FILE,
-    ):
-        intent_target_files = OrderedDefaultDict(lambda: default_intent_target_file)
-        synonym_target_files = OrderedDefaultDict(lambda: default_synonym_target_file)
-        regex_target_files = OrderedDefaultDict(lambda: default_regex_target_file)
-        lookup_target_files = OrderedDefaultDict(lambda: default_lookup_target_file)
-
-        nlu_files = rasa.shared.data.get_data_files(
-            nlu_data_path, rasa.shared.data.is_nlu_file
-        )
-
-        for filepath in nlu_files:
-            nlu_data = load_sortable_nlu_data(filepath)
-            intent_target_files.set_value_for_keys(
-                nlu_data.sorted_intents, filepath
-            )
-            synonym_target_files.set_value_for_keys(
-                nlu_data.sorted_synonym_names, filepath
-            )
-            regex_target_files.set_value_for_keys(
-                nlu_data.sorted_regex_names, filepath
-            )
-            lookup_target_files.set_value_for_keys(
-                nlu_data.sorted_lookup_names, filepath
-            )
-        target_files = cls(
-            nlu_data_path,
-            default_intent_target_file,
-            default_synonym_target_file,
-            default_regex_target_file,
-            default_lookup_target_file,
-            intent_target_files,
-            synonym_target_files,
-            regex_target_files,
-            lookup_target_files,
-
-        )
-        return target_files
 
 
 def log_inference_warning(
     nlu_data_path,
-    nlu_target_files_config,
+    target_files_config,
 ):
     logger.warning(
         f"""
-        Bootstrapping NLU target files config based on files in {nlu_data_path}.
+Bootstrapping NLU target files config based on files in {nlu_data_path}.
 
-        N.B. Manually review the the output in {nlu_target_files_config} before enforcing it!
+N.B. Manually review the the output in {target_files_config} before enforcing it!
 
-        If an intent/synonym/etc. is found in multiple files, the last file it appears in will be taken as the target file.
-        Because of how training data is loaded by Rasa, inference of target files can have unexpected results.
-        E.g. synonyms in both the short (inline) and long formats have equal status in loaded training data. 
-        This means a file can be found to contain a synonym even when it has no explicit "synonym:" section.
+If an intent/synonym/etc. is found in multiple files, the last file it appears in will be taken as the target file.
+Because of how training data is loaded by Rasa, inference of target files can have unexpected results.
+E.g. synonyms in both the short (inline) and long formats have equal status in loaded training data. 
+This means a file can be found to contain a synonym even when it has no explicit "synonym:" section.
         """
     )
 
 
-def log_enforcement_info(nlu_target_files_config, nlu_data_path):
+def log_enforcement_info(target_files_config, nlu_data_path):
     logger.warning(
         f"""
-        Redistributing data in directory {nlu_data_path} into target files
-        according to config in {nlu_target_files_config}
+Redistributing data in directory {nlu_data_path} into target files
+according to config in {target_files_config}
         """
     )
 
     logger.warning(
-        "\n"
-        f"Note that synonyms, regexes & lookups will be sorted alphabetically."
-        "\nTherefore you may see a large diff the first time you run this command.\n"
+        f"""
+Note that synonyms, regexes & lookups will be sorted alphabetically.
+Therefore you may see a large diff the first time you run this command.
+        """
     )
 
 
 def infer_nlu_target_files(
-    nlu_data_path, nlu_target_files_config, default_nlu_target_file
+    nlu_data_path, target_files_config, default_nlu_target_file
 ):
-    log_inference_warning(nlu_data_path, nlu_target_files_config)
-    nlu_target_files = TargetFilesConfig.infer_structure_from_files(
+    log_inference_warning(nlu_data_path, target_files_config)
+    target_files = TargetFilesConfig.infer_structure_from_files(
         nlu_data_path,
         default_nlu_target_file,
         default_nlu_target_file,
         default_nlu_target_file,
         default_nlu_target_file,
+        config_filepath=target_files_config
     )
-    nlu_target_files.write_target_config_to_file(nlu_target_files_config)
+    target_files.write_target_config_to_file()
 
 
-def enforce_nlu_target_files(nlu_target_files_config):
-    nlu_target_files = TargetFilesConfig.load_structure_from_file(
-        nlu_target_files_config
+def enforce_nlu_target_files(target_files_config, update_config_file):
+    target_files = TargetFilesConfig.load_structure_from_file(
+        target_files_config
     )
-    log_enforcement_info(nlu_target_files_config, nlu_target_files.nlu_data_path)
-    nlu_target_files.enforce_on_files()
+    log_enforcement_info(target_files_config, target_files.nlu_data_path)
+    target_files.enforce_on_files(update_config_file)

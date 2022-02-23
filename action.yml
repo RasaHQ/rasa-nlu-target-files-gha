@@ -1,10 +1,13 @@
 name: 'Rasa NLU Target Files'
 description: 'A GitHub action to put Rasa NLU data in prescribed target files'
 inputs:
-  nlu_target_files_config:
+  target_files_config:
     description: YAML file containing NLU target files config. 
     required: false
-    default: nlu_target_files_config.yml
+    default: target_files.yml
+  update_config_file:
+    description: Also update (rewrite) the `target_files_config` file with any new items found. New items will explicitly be assigned to the default file for their section. Specify `true` to use. 
+    required: false
 
 branding:
   icon: 'message-square'  
@@ -21,8 +24,19 @@ runs:
       run: |
         pip install -r "${{ github.action_path }}"/requirements.txt
       shell: bash
+    - name: Set boolean options
+      id: bool_opts
+      run: |
+        case "$(tr "[:upper:]" "[:lower:]" <<< "${{ inputs.update_config_file }}")" in
+            "true") echo "::set-output name=update_config_file::--update_config_file" ;;
+            *) echo "::set-output name=update_config_file::";;
+        esac
+
+      shell: bash
     - name: Run Result Comparison
       shell: bash
       run: |
         export PYTHONPATH=$PYTHONPATH:${{ github.action_path }}
-        python -m nlu_target_files --nlu_target_files_config ${{ inputs.nlu_target_files_config }}
+        python -m nlu_target_files enforce \
+          --target_files_config ${{ inputs.target_files_config }} \
+          ${{ steps.bool_opts.outputs.update_config_file }}
