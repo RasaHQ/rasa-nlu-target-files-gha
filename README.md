@@ -95,7 +95,7 @@ env:
   COMMIT_USERNAME: 'Github Actions'
   COMMIT_EMAIL: 'github.actions@users.noreply.github.com'
   DATA_DIRECTORY: 'data'
-  TARGET_FILE_CONFIG: 'nlu_target_file_config.yml'
+  TARGET_FILE_CONFIG: 'target_files.yml'
   COMMIT_MESSAGE: 'Github action: enforced NLU target files'
 
 jobs:
