@@ -10,3 +10,6 @@ nlu:
     - bus
     - car
     - truck
+- synonym: new synonym
+  examples: |
+    - new

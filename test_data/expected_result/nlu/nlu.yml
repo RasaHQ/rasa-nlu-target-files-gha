@@ -41,6 +41,3 @@ nlu:
 - intent: new
   examples: |
     - something new
-- synonym: new synonym
-  examples: |
-    - new
