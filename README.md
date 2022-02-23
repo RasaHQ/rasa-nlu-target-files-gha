@@ -116,7 +116,7 @@ jobs:
     - name: Commit changes if any were made
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
-        commit_message: '${{ env.COMMIT_USERNAME }}'
+        commit_message: '${{ env.COMMIT_MESSAGE }}'
         file_pattern: ${{ env.DATA_DIRECTORY }} ${{ env.TARGET_FILE_CONFIG }}
 ```
 
