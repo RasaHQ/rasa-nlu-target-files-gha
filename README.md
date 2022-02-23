@@ -89,11 +89,9 @@ stage and commit any changes made by the action.
 For example:
 ```yaml
 on:
-  push: {}
+  pull_request: {}
 
 env:
-  COMMIT_USERNAME: 'Github Actions'
-  COMMIT_EMAIL: 'github.actions@users.noreply.github.com'
   DATA_DIRECTORY: 'data'
   TARGET_FILE_CONFIG: 'target_files.yml'
   COMMIT_MESSAGE: 'Github action: enforced NLU target files'
@@ -103,25 +101,23 @@ jobs:
     runs-on: ubuntu-latest
     name: Target Files
     steps:
-
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.8.0
+      with:
+        access_token: ${{ github.token }}
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.head_ref }}
     - name: Enforce NLU Target Files
-      uses: RasaHQ/rasa-nlu-target-files-gha@v1.0.1
+      uses: RasaHQ/rasa-nlu-target-files-gha@v1.0.0
       with:
         nlu_target_file_config: ${{ env.TARGET_FILE_CONFIG }}
         update_config_file: true
-    - name: Check if changes were made
-      id: git_diff
-      run: |
-        git diff --exit-code
-      continue-on-error: true
     - name: Commit changes if any were made
-      if: steps.git_diff.outcome=='failure'
-      run: |
-        git config --global user.name '${{ env.COMMIT_USERNAME }}'
-        git config --global user.email '${{ env.COMMIT_EMAIL }}'
-        git add '${{ env.DATA_DIRECTORY }}' '${{ env.TARGET_FILE_CONFIG }}'
-        git commit -am '${{ env.COMMIT_MESSAGE }}'
-        git push
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: '${{ env.COMMIT_USERNAME }}'
+        file_pattern: ${{ env.DATA_DIRECTORY }} ${{ env.TARGET_FILE_CONFIG }}
 ```
 
 
