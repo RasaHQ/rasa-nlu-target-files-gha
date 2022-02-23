@@ -56,7 +56,7 @@ Basic usage:
 ...
   steps:
   - name: Enforce NLU Target Files
-    uses: RasaHQ/rasa-nlu-target-file-gha@v1.0.1
+    uses: RasaHQ/rasa-nlu-target-files-gha@v1.0.1
     with:
       target_files_config: ./target_files.yml
 ```
@@ -105,7 +105,7 @@ jobs:
     steps:
 
     - name: Enforce NLU Target Files
-      uses: RasaHQ/rasa-nlu-target-file-gha@v1.0.1
+      uses: RasaHQ/rasa-nlu-target-files-gha@v1.0.1
       with:
         nlu_target_file_config: ${{ env.TARGET_FILE_CONFIG }}
         update_config_file: true
