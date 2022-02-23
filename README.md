@@ -56,9 +56,9 @@ Basic usage:
 ...
   steps:
   - name: Enforce NLU Target Files
-    uses: RasaHQ/rasa-nlu-target-file-gha@1.0.0
+    uses: RasaHQ/rasa-nlu-target-file-gha@v1.0.1
     with:
-      nlu_target_file_config: ./nlu_target_file_config.yml
+      target_files_config: ./target_files.yml
 ```
 
 
@@ -101,10 +101,11 @@ env:
 jobs:
   enforce_nlu_target_files:
     runs-on: ubuntu-latest
-    name: Cross-validate
+    name: Target Files
     steps:
+
     - name: Enforce NLU Target Files
-      uses: RasaHQ/rasa-nlu-target-file-gha@1.0.0
+      uses: RasaHQ/rasa-nlu-target-file-gha@v1.0.1
       with:
         nlu_target_file_config: ${{ env.TARGET_FILE_CONFIG }}
         update_config_file: true
@@ -115,11 +116,6 @@ jobs:
       continue-on-error: true
     - name: Commit changes if any were made
       if: steps.git_diff.outcome=='failure'
-      env:
-        COMMIT_USERNAME: 'Github Actions'
-        COMMIT_EMAIL: 'github.actions@users.noreply.github.com'
-        DATA_DIRECTORY: 'data'
-        COMMIT_MESSAGE: 'Github action: enforced NLU target files'
       run: |
         git config --global user.name '${{ env.COMMIT_USERNAME }}'
         git config --global user.email '${{ env.COMMIT_EMAIL }}'
